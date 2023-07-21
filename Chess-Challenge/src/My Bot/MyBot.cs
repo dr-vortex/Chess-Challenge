@@ -69,10 +69,15 @@ public class MyBot : IChessBot
 	}
 };
 
+	private string _lastMoveText;
 	private bool debugMode = true;
+	private string _bestMoveText;
+
+	private int moveNum = 0;
 
 	public Move Think(Board board, Timer timer)
 	{
+		debugPrint($"[#{++moveNum}] Evaluating move...");
 		Move[] moves = board.GetLegalMoves();
 		Move bestMove = moves[0];
 		int bestScore = int.MinValue;
@@ -84,8 +89,11 @@ public class MyBot : IChessBot
 			{
 				bestScore = score;
 				bestMove = move;
+				_bestMoveText = _lastMoveText;
 			}
 		}
+
+		debugPrint($"[#{moveNum}] Best move: {_bestMoveText}");
 		return bestMove;
 	}
 
@@ -95,29 +103,27 @@ public class MyBot : IChessBot
 		Square startSquare = move.StartSquare;
 		Piece movingPiece = board.GetPiece(startSquare);
 
-		debugPrint($"Evaluating move: {move.MovePieceType} {startSquare.Name} -> {startSquare.Name}");
-
 		// Evaluating capture moves.
+		int captureScore = 0;
 		if (move.IsCapture)
 		{
-			score += PieceValues[(int)move.CapturePieceType];
+			score += captureScore = PieceValues[(int)move.CapturePieceType] * 10;
 		}
 
 		// Evaluating promotion moves.
+		int promotionScore = 0;
 		if (move.IsPromotion)
 		{
-			score += PieceValues[(int)move.PromotionPieceType] - PieceValues[(int)PieceType.Pawn]; // Score the promotion piece higher than a pawn.
+			score += promotionScore = PieceValues[(int)move.PromotionPieceType] - PieceValues[(int)PieceType.Pawn]; // Score the promotion piece higher than a pawn.
 		}
 
-		// Evaluate piece mobility for the moved piece.
-		
-		
-		int botMobility = CalculateMobility(board, board.IsWhiteToMove);
-		int opponentMobility = CalculateMobility(board, !board.IsWhiteToMove);
-		score += (botMobility - opponentMobility);
+		// Evaluate piece mobility
+		int mobilityScore = CalculateMobility(board, board.IsWhiteToMove);
+		score += mobilityScore;
 
-		// Evaluate positional advantage for the moved piece.
-		score += SquareTables[(int)movingPiece.PieceType - 1, move.TargetSquare.Rank, move.TargetSquare.File]; // Adjust the positional score based on the average positional advantage of the bot's pieces.
+		// Evaluate positional advantage
+		int positionalScore = 0;
+		score += positionalScore = SquareTables[(int)movingPiece.PieceType - 1, move.TargetSquare.Rank, move.TargetSquare.File]; // Adjust the positional score based on the average positional advantage of the bot's pieces.
 
 		// Evaluate king safety.
 		if (board.IsInCheck())
@@ -133,6 +139,9 @@ public class MyBot : IChessBot
 			return int.MaxValue - 1;
 		}
 
+		_lastMoveText = $"{move.MovePieceType} {startSquare.Name} -> {move.TargetSquare.Name}	scores: total:{score}	capture:{captureScore}	promotion:{promotionScore}	mobility:{mobilityScore}	position:{positionalScore}";
+		debugPrint($"[#{moveNum}] Evaluated move: {_lastMoveText}");
+
 		return score;
 	}
 
@@ -142,20 +151,17 @@ public class MyBot : IChessBot
 		Move[] moves = board.GetLegalMoves();
 		foreach (Move move in moves)
 		{
-			// Consider only the player's moves
-			if (board.GetPiece(move.StartSquare).IsWhite == isWhite)
-			{
-				int pieceValue = PieceValues[(int)board.GetPiece(move.StartSquare).PieceType];
-				int pieceMobility = PieceMobility[(int)board.GetPiece(move.StartSquare).PieceType];
-				mobility += pieceValue * pieceMobility;
-			}
+			//int pieceValue = PieceValues[(int)board.GetPiece(move.StartSquare).PieceType];
+			int pieceMobility = PieceMobility[(int)board.GetPiece(move.StartSquare).PieceType];
+			mobility += pieceMobility * (board.GetPiece(move.StartSquare).IsWhite == isWhite ? 1 : -1);
 		}
 		return mobility;
 	}
 
 	private void debugPrint(string message)
 	{
-		if (debugMode){
+		if (debugMode)
+		{
 			System.Console.WriteLine(message);
 		}
 	}
