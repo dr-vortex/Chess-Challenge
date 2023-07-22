@@ -69,22 +69,31 @@ public class MyBot : IChessBot
 	}
 };
 
+	//private List<Move> moves = new List<Move>();
+
 	private string _lastMoveText;
-	private bool debugMode = true;
 	private string _bestMoveText;
 
 	private int moveNum = 0;
 
+	private static int LogLevel = 2;
+
+	private int maxDepth = 5;
+
+	private static string[] ShortNames = { "", "P", "N", "B", "R", "Q", "K" };
+
 	public Move Think(Board board, Timer timer)
 	{
-		debugPrint($"[#{++moveNum}] Evaluating move...");
+		Print(1, $"[#{++moveNum}] Evaluating move...");
 		Move[] moves = board.GetLegalMoves();
 		Move bestMove = moves[0];
 		int bestScore = int.MinValue;
-
+		int movesEvaluated = 0;
 		foreach (Move move in moves)
 		{
 			int score = EvaluateMove(move, board);
+			string movesEvaledString = (++movesEvaluated).ToString("D" + moves.Length.ToString().Length);
+			Print(1, $"[#{moveNum}] Evaluated move {movesEvaledString}/{moves.Length}: {_lastMoveText}");
 			if (score > bestScore)
 			{
 				bestScore = score;
@@ -93,28 +102,44 @@ public class MyBot : IChessBot
 			}
 		}
 
-		debugPrint($"[#{moveNum}] Best move: {_bestMoveText}");
+		Print(2, $"[#{moveNum}] Best move: {_bestMoveText}");
+		//moves.Add(bestMove);
 		return bestMove;
 	}
 
 	private int EvaluateMove(Move move, Board board)
 	{
+
+		board.MakeMove(move);
+		if (board.IsInCheckmate())
+		{
+			board.UndoMove(move);
+			return int.MaxValue;
+		}
+		if (board.IsDraw())
+		{
+			board.UndoMove(move);
+			return int.MinValue;
+		}
+		board.UndoMove(move);
+
 		int score = 0;
 		Square startSquare = move.StartSquare;
 		Piece movingPiece = board.GetPiece(startSquare);
 
-		// Evaluating capture moves.
+		// Evaluating captures
 		int captureScore = 0;
 		if (move.IsCapture)
 		{
 			score += captureScore = PieceValues[(int)move.CapturePieceType] * 10;
 		}
 
-		// Evaluating promotion moves.
+		// Evaluating promotions
 		int promotionScore = 0;
 		if (move.IsPromotion)
 		{
-			score += promotionScore = PieceValues[(int)move.PromotionPieceType] - PieceValues[(int)PieceType.Pawn]; // Score the promotion piece higher than a pawn.
+			// Score the promotion piece higher than a pawn.
+			score += promotionScore = PieceValues[(int)move.PromotionPieceType] - PieceValues[(int)PieceType.Pawn];
 		}
 
 		// Evaluate piece mobility
@@ -123,26 +148,33 @@ public class MyBot : IChessBot
 
 		// Evaluate positional advantage
 		int positionalScore = 0;
-		score += positionalScore = SquareTables[(int)movingPiece.PieceType - 1, move.TargetSquare.Rank, move.TargetSquare.File]; // Adjust the positional score based on the average positional advantage of the bot's pieces.
+		// Adjust the positional score based on the average positional advantage of the bot's pieces.
+		score += positionalScore = GetSquareValue(move, board.IsWhiteToMove);
 
-		// Evaluate king safety.
+		// Evaluate king safety
 		if (board.IsInCheck())
 		{
 			// Penalize moves that put the king in check.
 			score -= 100;
 		}
 
-		// Check for checkmate.
+		// Check for checkmate
 		if (board.IsInCheckmate())
 		{
 			// Assign a very high score for a checkmate move.
 			return int.MaxValue - 1;
 		}
 
-		_lastMoveText = $"{move.MovePieceType} {startSquare.Name} -> {move.TargetSquare.Name}	scores: total:{score}	capture:{captureScore}	promotion:{promotionScore}	mobility:{mobilityScore}	position:{positionalScore}";
-		debugPrint($"[#{moveNum}] Evaluated move: {_lastMoveText}");
+		_lastMoveText = $"{ShortNames[(int)move.MovePieceType]} {startSquare.Name} -> {move.TargetSquare.Name}	score:{score}	capture:{captureScore}	promotion:{promotionScore}	mobility:{mobilityScore}	position:{positionalScore}";
 
 		return score;
+	}
+
+	private int GetSquareValue(Move move, bool isWhite)
+	{
+		int rank = isWhite ? move.TargetSquare.Rank : 7 - move.TargetSquare.Rank;
+		int file = isWhite ? move.TargetSquare.File : 7 - move.TargetSquare.File;
+		return SquareTables[(int)move.MovePieceType - 1, rank, file];
 	}
 
 	private int CalculateMobility(Board board, bool isWhite)
@@ -151,16 +183,31 @@ public class MyBot : IChessBot
 		Move[] moves = board.GetLegalMoves();
 		foreach (Move move in moves)
 		{
-			//int pieceValue = PieceValues[(int)board.GetPiece(move.StartSquare).PieceType];
-			int pieceMobility = PieceMobility[(int)board.GetPiece(move.StartSquare).PieceType];
-			mobility += pieceMobility * (board.GetPiece(move.StartSquare).IsWhite == isWhite ? 1 : -1);
+			int moveMobility = 0;
+			Piece piece = board.GetPiece(move.StartSquare);
+			int pieceValue = PieceValues[(int)piece.PieceType];
+			int pieceMobility = PieceMobility[(int)piece.PieceType] * pieceValue * (piece.IsWhite == isWhite ? 1 : -1);
+			moveMobility += pieceMobility;
+
+			int capturedPieceValue = 0;
+			if (move.IsCapture)
+			{
+				capturedPieceValue = PieceValues[(int)piece.PieceType];
+				moveMobility += capturedPieceValue * pieceValue; // Encourage capturing valuable pieces
+			}
+
+			int attackedSquareValue = GetSquareValue(move, isWhite);
+			moveMobility += attackedSquareValue;
+
+			Print(0, $"	Mobility for move {ShortNames[(int)move.MovePieceType]} {move.StartSquare.Name} -> {move.TargetSquare.Name}	piece:{pieceMobility}	capture:{capturedPieceValue}	attack:{attackedSquareValue}");
+			mobility += moveMobility;
 		}
 		return mobility;
 	}
 
-	private void debugPrint(string message)
+	private static void Print(int logLevel, string message)
 	{
-		if (debugMode)
+		if (logLevel >= LogLevel)
 		{
 			System.Console.WriteLine(message);
 		}
