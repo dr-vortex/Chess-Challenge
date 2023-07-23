@@ -9,6 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using static ChessChallenge.Application.Settings;
 using static ChessChallenge.Application.ConsoleHelper;
+using Frederox.MiniMax;
+using Frederox.AlphaBeta;
 
 namespace ChessChallenge.Application
 {
@@ -19,7 +21,13 @@ namespace ChessChallenge.Application
             Human,
             MyBot,
             EvilBot,
-            MiniMax
+
+            // Old Versions of my bot
+            MiniMax,
+            AlphaBeta,
+
+            // Bots from other people
+            Caden32, // https://discord.com/channels/1132289356011405342/1132353028385677382/1132547422527168583
         }
 
         // Game state
@@ -210,6 +218,8 @@ namespace ChessChallenge.Application
                 PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot => new ChessPlayer(new EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.MiniMax => new ChessPlayer(new MiniMax(), type, GameDurationMilliseconds),
+                PlayerType.AlphaBeta => new ChessPlayer(new AlphaBeta(), type, GameDurationMilliseconds),
+                PlayerType.Caden32 => new ChessPlayer(new Caden32(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
         }

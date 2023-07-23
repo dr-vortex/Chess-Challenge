@@ -1,28 +1,37 @@
 ﻿using ChessChallenge.API;
 using System;
+using System.Linq;
+using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
-    static int[] pieceValues = { 0, 1, 3, 3, 5, 9, 1000 };
     int positionsEvaluated;
     bool botIsWhite;
+    int transpositionTableSize = 1048576;
+    Transposition[] transpositions;
+    int negativeInfinity = -100000;
+    int positiveInfinity = 100000;
+
+    public MyBot() 
+    {
+        transpositions = new Transposition[transpositionTableSize];
+    }
 
     public Move Think(Board board, Timer timer)
     {
+        if (board.PlyCount == 0 && board.IsWhiteToMove) return new Move("e2e4", board);
         botIsWhite = board.IsWhiteToMove;
         positionsEvaluated = 0;
 
         Move[] moves = board.GetLegalMoves();
         Move bestMove = moves[0];
-        int bestScore = int.MinValue;
+        int bestScore = negativeInfinity;
 
-        int depthToSearch;
-        if (moves.Length < 10) depthToSearch = 5;
-        else depthToSearch = 3;
+        int depthToSearch = 4;
 
         for (int i = 0; i < moves.Length; i++)
         {
-            int score = AlphaBeta(board, moves[i], depthToSearch, int.MinValue, int.MaxValue);
+            int score = AlphaBeta(board, moves[i], depthToSearch, negativeInfinity, positiveInfinity);
 
             if (score > bestScore)
             {
@@ -31,15 +40,26 @@ public class MyBot : IChessBot
             }
         }
 
-        Console.WriteLine($"Depth: {depthToSearch} evaluated {positionsEvaluated} positions!");
+        Console.WriteLine($"Depth: {depthToSearch} evaluated {positionsEvaluated} positions in {timer.MillisecondsElapsedThisTurn}ms");
         return bestMove;
     }
 
     // fail-soft alpha-beta -- https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
-    public int AlphaBeta(Board board, Move move, int depth, int alpha, int beta)
+    int AlphaBeta(Board board, Move move, int depth, int alpha, int beta)
     {
-        positionsEvaluated++;
         board.MakeMove(move);
+
+        ulong zobristKey = board.ZobristKey;
+        Transposition? transposition = getTransposition(zobristKey);
+
+        // If this move has already been evaluated re-use its result
+        if (transposition != null && transposition.Depth >= depth)
+        {
+            board.UndoMove(move);
+            return transposition.Score;
+        }
+
+        positionsEvaluated++;
 
         // Evaluate from the perspective of the bot's color
         int heuristic = EvaluateBoard(board, botIsWhite);
@@ -50,13 +70,14 @@ public class MyBot : IChessBot
             return heuristic;
         }
 
-        Move[] legalResponses = board.GetLegalMoves();
+        //Move[] legalResponses = board.GetLegalMoves();
+        Move[] legalResponses = getMovesWithCapturesFirst(board);
         int value;
 
         // maximize score
         if (botIsWhite == board.IsWhiteToMove)
         {
-            value = int.MinValue;
+            value = negativeInfinity;
             for (int i = 0; i < legalResponses.Length; i++)
             {
                 value = Math.Max(value, AlphaBeta(board, legalResponses[i], depth - 1, alpha, beta));
@@ -67,7 +88,7 @@ public class MyBot : IChessBot
         }
         else
         {
-            value = int.MaxValue;
+            value = positiveInfinity;
             for (int i = 0; i < legalResponses.Length; i++)
             {
                 value = Math.Min(value, AlphaBeta(board, legalResponses[i], depth - 1, alpha, beta));
@@ -77,31 +98,64 @@ public class MyBot : IChessBot
             }
         }
 
+        setTransposition(zobristKey, depth, value);
         board.UndoMove(move);
         return value;
     }
 
-    public int EvaluateBoard(Board board, bool asWhite)
+    int EvaluateBoard(Board board, bool asWhite)
     {
-        int whiteScore = 0;
-        int blackScore = 0;
-
-        PieceList[] pieces = board.GetAllPieceLists();
-
-        for (int i = 0; i < pieces.Length; i++)
-        {
-            for (int j = 0; j < pieces[i].Count; j++)
-            {
-                Piece piece = pieces[i][j];
-                int pieceScore = pieceValues[(int)piece.PieceType];
-
-                if (piece.IsWhite) whiteScore += pieceScore;
-                else blackScore += pieceScore;
-            }
-        }
-
-        if (board.IsInCheckmate() || board.IsDraw()) return int.MinValue;
+        int whiteScore = EvaluateSide(board, true);
+        int blackScore = EvaluateSide(board, false);
 
         return (asWhite ? 1 : -1) * (whiteScore - blackScore);
     }
+
+    int EvaluateSide(Board board, bool asWhite) 
+    {
+        // Sum of all pieces values
+        int pieceValues = board.GetPieceList(PieceType.Pawn, asWhite).Count * 1 +
+            board.GetPieceList(PieceType.Knight, asWhite).Count * 3 +
+            board.GetPieceList(PieceType.Bishop, asWhite).Count * 3 +
+            board.GetPieceList(PieceType.Rook, asWhite).Count * 5 +
+            board.GetPieceList(PieceType.Queen, asWhite).Count * 9 +
+            board.GetPieceList(PieceType.King, asWhite).Count * 1000;
+
+        // Mobility (the number of legal moves)
+        int mobilityScore = (int)Math.Floor(0.1f * board.GetLegalMoves().Length);
+
+        return pieceValues + mobilityScore;
+    }
+
+    Transposition? getTransposition(ulong zobristKey)
+    {
+        Transposition entry = transpositions[(int)(zobristKey % (ulong)transpositionTableSize)];
+        if (entry != null && entry.ZobristKey == zobristKey) return entry;
+        return null;
+    }
+
+    void setTransposition(ulong zobristKey, int depth, int score)
+    {
+        transpositions[(int)(zobristKey % (ulong)transpositionTableSize)] = new Transposition
+        {
+            ZobristKey = zobristKey,
+            Depth = depth,
+            Score = score
+        };
+    }
+
+    Move[] getMovesWithCapturesFirst(Board board)
+    {
+        Move[] legalMoves = board.GetLegalMoves();
+        return legalMoves.Where(m => m.IsCapture).ToArray()
+            .Concat(legalMoves.Where(m => !m.IsCapture).ToArray()
+        ).ToArray();
+    }
+}
+
+public class Transposition
+{
+    public ulong ZobristKey { get; set; }
+    public int Depth { get; set; }
+    public int Score { get; set; }
 }
