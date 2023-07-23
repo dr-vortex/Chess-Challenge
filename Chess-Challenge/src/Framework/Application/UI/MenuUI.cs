@@ -9,8 +9,8 @@ namespace ChessChallenge.Application
     {
         public static void DrawButtons(ChallengeController controller)
         {
-            Vector2 buttonPos = UIHelper.Scale(new Vector2(230, 100));
-            Vector2 buttonSize = UIHelper.Scale(new Vector2(320, 55));
+            Vector2 buttonPos = UIHelper.Scale(new Vector2(200, 100));
+            Vector2 buttonSize = UIHelper.Scale(new Vector2(380, 55));
             float spacing = buttonSize.Y * 1.2f;
             float breakSpacing = spacing * 0.6f;
 
@@ -44,45 +44,63 @@ namespace ChessChallenge.Application
                 controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Caden32);
             }
 
-            // Page buttons
+            if (NextButtonInRow("MyBot vs @Flow", ref buttonPos, spacing, buttonSize))
+            {
+                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Flow);
+            }
+
+            if (NextButtonInRow("MyBot vs @Lithium", ref buttonPos, spacing, buttonSize))
+            {
+                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Lithium);
+            }
+
             buttonPos.Y += breakSpacing;
 
-            if (NextButtonInRow("Save Games", ref buttonPos, spacing, buttonSize))
+            if (NextButtonInRow("MyBot vs @Ernestoyaquello", ref buttonPos, spacing, buttonSize))
             {
-                string pgns = controller.AllPGNs;
-                string directoryPath = Path.Combine(FileHelper.AppDataPath, "Games");
-                Directory.CreateDirectory(directoryPath);
-                string fileName = FileHelper.GetUniqueFileName(directoryPath, "games", ".txt");
-                string fullPath = Path.Combine(directoryPath, fileName);
-                File.WriteAllText(fullPath, pgns);
-                ConsoleHelper.Log("Saved games to " + fullPath, false, ConsoleColor.Blue);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Ernestoyaquello);
             }
-            if (NextButtonInRow("Rules & Help", ref buttonPos, spacing, buttonSize))
-            {
-                FileHelper.OpenUrl("https://github.com/SebLague/Chess-Challenge");
-            }
-            if (NextButtonInRow("Documentation", ref buttonPos, spacing, buttonSize))
-            {
-                FileHelper.OpenUrl("https://seblague.github.io/chess-coding-challenge/documentation/");
-            }
-            if (NextButtonInRow("Submission Page", ref buttonPos, spacing, buttonSize))
-            {
-                FileHelper.OpenUrl("https://forms.gle/6jjj8jxNQ5Ln53ie6");
-            }
+
+            // Page buttons
+            //buttonPos.Y += breakSpacing;
+
+            //if (NextButtonInRow("Save Games", ref buttonPos, spacing, buttonSize))
+            //{
+            //    string pgns = controller.AllPGNs;
+            //    string directoryPath = Path.Combine(FileHelper.AppDataPath, "Games");
+            //    Directory.CreateDirectory(directoryPath);
+            //    string fileName = FileHelper.GetUniqueFileName(directoryPath, "games", ".txt");
+            //    string fullPath = Path.Combine(directoryPath, fileName);
+            //    File.WriteAllText(fullPath, pgns);
+            //    System.Diagnostics.Process.Start("explorer.exe", string.Format("/select,\"{0}\"", fullPath));
+            //    ConsoleHelper.Log("Saved games to " + fullPath, false, ConsoleColor.Blue);
+            //}
+            //if (NextButtonInRow("Rules & Help", ref buttonPos, spacing, buttonSize))
+            //{
+            //    FileHelper.OpenUrl("https://github.com/SebLague/Chess-Challenge");
+            //}
+            //if (NextButtonInRow("Documentation", ref buttonPos, spacing, buttonSize))
+            //{
+            //    FileHelper.OpenUrl("https://seblague.github.io/chess-coding-challenge/documentation/");
+            //}
+            //if (NextButtonInRow("Submission Page", ref buttonPos, spacing, buttonSize))
+            //{
+            //    FileHelper.OpenUrl("https://forms.gle/6jjj8jxNQ5Ln53ie6");
+            //}
 
             // Window and quit buttons
             buttonPos.Y += breakSpacing;
 
             bool isBigWindow = Raylib.GetScreenWidth() > Settings.ScreenSizeSmall.X;
             string windowButtonName = isBigWindow ? "Smaller Window" : "Bigger Window";
-            if (NextButtonInRow(windowButtonName, ref buttonPos, spacing, buttonSize))
-            {
-                Program.SetWindowSize(isBigWindow ? Settings.ScreenSizeSmall : Settings.ScreenSizeBig);
-            }
-            if (NextButtonInRow("Exit (ESC)", ref buttonPos, spacing, buttonSize))
-            {
-                Environment.Exit(0);
-            }
+            //if (NextButtonInRow(windowButtonName, ref buttonPos, spacing, buttonSize))
+            //{
+            //    Program.SetWindowSize(isBigWindow ? Settings.ScreenSizeSmall : Settings.ScreenSizeBig);
+            //}
+            //if (NextButtonInRow("Exit (ESC)", ref buttonPos, spacing, buttonSize))
+            //{
+            //    Environment.Exit(0);
+            //}
 
             bool NextButtonInRow(string name, ref Vector2 pos, float spacingY, Vector2 size)
             {

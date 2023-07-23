@@ -28,6 +28,11 @@ namespace ChessChallenge.Application
 
             // Bots from other people
             Caden32, // https://discord.com/channels/1132289356011405342/1132353028385677382/1132547422527168583
+            Flow, // https://discord.com/channels/@me/1132439128043180112/1132666955644555265
+            Lithium, // https://discord.com/channels/1132289356011405342/1132353028385677382/1132686682529992766
+
+            // Bots from github
+            Ernestoyaquello
         }
 
         // Game state
@@ -220,6 +225,9 @@ namespace ChessChallenge.Application
                 PlayerType.MiniMax => new ChessPlayer(new MiniMax(), type, GameDurationMilliseconds),
                 PlayerType.AlphaBeta => new ChessPlayer(new AlphaBeta(), type, GameDurationMilliseconds),
                 PlayerType.Caden32 => new ChessPlayer(new Caden32(), type, GameDurationMilliseconds),
+                PlayerType.Flow => new ChessPlayer(new Flow(), type, GameDurationMilliseconds),
+                PlayerType.Ernestoyaquello => new ChessPlayer(new Ernestoyaquello(), type, GameDurationMilliseconds),
+                PlayerType.Lithium => new ChessPlayer(new Lithium(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
         }
