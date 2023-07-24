@@ -17,48 +17,58 @@ namespace ChessChallenge.Application
             // Game Buttons
             if (NextButtonInRow("Human vs MyBot", ref buttonPos, spacing, buttonSize))
             {
-                var whiteType = controller.HumanWasWhiteLastGame ? ChallengeController.PlayerType.MyBot : ChallengeController.PlayerType.Human;
-                var blackType = !controller.HumanWasWhiteLastGame ? ChallengeController.PlayerType.MyBot : ChallengeController.PlayerType.Human;
+                var whiteType = controller.HumanWasWhiteLastGame ? ChallengeController.PlayerType.Frederox : ChallengeController.PlayerType.Human;
+                var blackType = !controller.HumanWasWhiteLastGame ? ChallengeController.PlayerType.Frederox : ChallengeController.PlayerType.Human;
                 controller.StartNewGame(whiteType, blackType);
             }
 
             if (NextButtonInRow("MyBot vs EvilBot", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.EvilBot);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.EvilBot);
             }
 
             if (NextButtonInRow("MyBot vs MiniMax", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.MiniMax);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.MiniMax);
             }
 
             if (NextButtonInRow("MyBot vs AlphaBeta", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.AlphaBeta);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.AlphaBeta);
             }
 
             buttonPos.Y += breakSpacing;
 
             if (NextButtonInRow("MyBot vs @Caden32", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Caden32);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Caden32);
             }
 
             if (NextButtonInRow("MyBot vs @Flow", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Flow);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Flow);
             }
 
             if (NextButtonInRow("MyBot vs @Lithium", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Lithium);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Lithium);
+            }
+
+            if (NextButtonInRow("MyBot vs @Diamoundz", ref buttonPos, spacing, buttonSize))
+            {
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Diamoundz);
+            }
+
+            if (NextButtonInRow("MyBot vs @Moonwalker", ref buttonPos, spacing, buttonSize))
+            {
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Moonwalker);
             }
 
             buttonPos.Y += breakSpacing;
 
             if (NextButtonInRow("MyBot vs @Ernestoyaquello", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.Ernestoyaquello);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Ernestoyaquello);
             }
 
             // Page buttons

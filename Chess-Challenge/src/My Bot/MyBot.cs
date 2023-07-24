@@ -1,161 +1,158 @@
 ﻿using ChessChallenge.API;
+using Frederox.AlphaBeta;
 using System;
 using System.Linq;
-using System.Collections.Generic;
 
 public class MyBot : IChessBot
 {
-    int positionsEvaluated;
-    bool botIsWhite;
-    int transpositionTableSize = 1048576;
-    Transposition[] transpositions;
-    int negativeInfinity = -100000;
-    int positiveInfinity = 100000;
+    // 256 * 1024 * 1024 = 268435456 bits
+    // 268435456 / 112 (Sizeof TEntry) = 2396745
+    TEntry[] transpositions = new TEntry[2396745];
 
-    public MyBot() 
-    {
-        transpositions = new Transposition[transpositionTableSize];
-    }
+    int positionsEvaluated;
+
+    int negativeInfinity = -100000;
+    Move bestMove;
+    byte mDepth = 5;
 
     public Move Think(Board board, Timer timer)
     {
-        if (board.PlyCount == 0 && board.IsWhiteToMove) return new Move("e2e4", board);
-        botIsWhite = board.IsWhiteToMove;
         positionsEvaluated = 0;
+        Negamax(board, mDepth, negativeInfinity, -negativeInfinity, board.IsWhiteToMove);
+        Console.WriteLine($"Depth: {mDepth}, Evaluated: {positionsEvaluated}, {bestMove}");
 
-        Move[] moves = board.GetLegalMoves();
-        Move bestMove = moves[0];
-        int bestScore = negativeInfinity;
-
-        int depthToSearch = 4;
-
-        for (int i = 0; i < moves.Length; i++)
-        {
-            int score = AlphaBeta(board, moves[i], depthToSearch, negativeInfinity, positiveInfinity);
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestMove = moves[i];
-            }
-        }
-
-        Console.WriteLine($"Depth: {depthToSearch} evaluated {positionsEvaluated} positions in {timer.MillisecondsElapsedThisTurn}ms");
         return bestMove;
     }
 
-    // fail-soft alpha-beta -- https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
-    int AlphaBeta(Board board, Move move, int depth, int alpha, int beta)
+    int Negamax(Board board, byte depth, int alpha, int beta, bool asWhite)
     {
-        board.MakeMove(move);
+        int alphaOriginal = alpha;
+        TEntry? ttEntry = getTransposition(board.ZobristKey);
 
-        ulong zobristKey = board.ZobristKey;
-        Transposition? transposition = getTransposition(zobristKey);
-
-        // If this move has already been evaluated re-use its result
-        if (transposition != null && transposition.Depth >= depth)
+        // (* Transposition Table Lookup; board.ZobristKey is the lookup key for ttEntry *)
+        if (ttEntry != null && ttEntry.Depth >= depth)
         {
-            board.UndoMove(move);
-            return transposition.Score;
+            // if ttEntry.flag = EXACT then
+            if (ttEntry.Flag == 2) return ttEntry.Value;
+
+            // else if ttEntry.flag = LOWERBOUND then
+            else if (ttEntry.Flag == 0) alpha = Math.Max(alpha, ttEntry.Value);
+
+            // else if ttEntry.flag = UPPERBOUND then
+            else beta = Math.Min(beta, ttEntry.Value);
+
+            // if α ≥ β then
+            if (alpha >= beta) return ttEntry.Value;
         }
 
         positionsEvaluated++;
 
-        // Evaluate from the perspective of the bot's color
-        int heuristic = EvaluateBoard(board, botIsWhite);
-
-        if (depth == 0)
+        // if depth = 0 or node is a terminal node then
+        if (depth == 0 || board.IsDraw() || board.IsInCheckmate())
         {
+            if (board.IsInCheckmate()) return negativeInfinity;
+            // return color × the heuristic value of node
+            return EvaluateHeuristicValue(board, asWhite);
+        }
+
+        var moves = board.GetLegalMoves()
+            .OrderByDescending(move => ScoreMovePotential(move));
+
+        int value = negativeInfinity;
+
+        //for (int i = 0; i < moves.Length; i++)
+        foreach(Move move in moves)
+        {
+            board.MakeMove(move);
+            int moveScore = Math.Max(value, -Negamax(board, (byte)(depth - 1), -beta, -alpha, !asWhite));
             board.UndoMove(move);
-            return heuristic;
-        }
 
-        //Move[] legalResponses = board.GetLegalMoves();
-        Move[] legalResponses = getMovesWithCapturesFirst(board);
-        int value;
-
-        // maximize score
-        if (botIsWhite == board.IsWhiteToMove)
-        {
-            value = negativeInfinity;
-            for (int i = 0; i < legalResponses.Length; i++)
+            if (value < moveScore)
             {
-                value = Math.Max(value, AlphaBeta(board, legalResponses[i], depth - 1, alpha, beta));
-                alpha = Math.Max(alpha, value);
-
-                if (value >= beta) break;
+                value = moveScore;
+                if (depth == mDepth) bestMove = move;
             }
-        }
-        else
-        {
-            value = positiveInfinity;
-            for (int i = 0; i < legalResponses.Length; i++)
-            {
-                value = Math.Min(value, AlphaBeta(board, legalResponses[i], depth - 1, alpha, beta));
-                beta = Math.Min(beta, value);
 
-                if (value <= alpha) break;
-            }
+            alpha = Math.Max(alpha, value);
+            if (alpha >= beta) break;
         }
 
-        setTransposition(zobristKey, depth, value);
-        board.UndoMove(move);
+        // (* Transposition Table Store; board.ZobristKey is the lookup key for ttEntry *)
+
+        // ttEntry.flag := UPPERBOUND
+        byte flag = 2;
+
+        // ttEntry.flag := UPPERBOUND
+        if (value <= alphaOriginal) flag = 1;
+
+        // ttEntry.flag := UPPERBOUND
+        else if (value >= beta) flag = 0;
+
+        setTransposition(board.ZobristKey, depth, value, flag);
         return value;
     }
 
-    int EvaluateBoard(Board board, bool asWhite)
+    int ScoreMovePotential(Move move)
     {
-        int whiteScore = EvaluateSide(board, true);
-        int blackScore = EvaluateSide(board, false);
+        int scoreGuess = 0;
 
-        return (asWhite ? 1 : -1) * (whiteScore - blackScore);
+        // Prioritise taking high-value pieces with the lowest-value piece
+        if (move.IsCapture)
+            scoreGuess += 10 * GetPieceValue(move.CapturePieceType) - GetPieceValue(move.MovePieceType);
+
+        // Promoting a pawn
+        if (move.IsPromotion) 
+            scoreGuess += GetPieceValue(move.PromotionPieceType);
+
+        return scoreGuess;
     }
 
-    int EvaluateSide(Board board, bool asWhite) 
+    int GetPieceValue(PieceType type)
     {
-        // Sum of all pieces values
-        int pieceValues = board.GetPieceList(PieceType.Pawn, asWhite).Count * 1 +
-            board.GetPieceList(PieceType.Knight, asWhite).Count * 3 +
-            board.GetPieceList(PieceType.Bishop, asWhite).Count * 3 +
-            board.GetPieceList(PieceType.Rook, asWhite).Count * 5 +
-            board.GetPieceList(PieceType.Queen, asWhite).Count * 9 +
-            board.GetPieceList(PieceType.King, asWhite).Count * 1000;
-
-        // Mobility (the number of legal moves)
-        int mobilityScore = (int)Math.Floor(0.1f * board.GetLegalMoves().Length);
-
-        return pieceValues + mobilityScore;
+        int[] values = { 0, 100, 300, 300, 500, 900, 10000 };
+        return values[(int)type];
     }
 
-    Transposition? getTransposition(ulong zobristKey)
+    int EvaluateHeuristicValue(Board board, bool asWhite) 
+        => EvaluateSide(board, asWhite) - EvaluateSide(board, !asWhite);
+
+    int EvaluateSide(Board board, bool asWhite)
+        => board.GetPieceList(PieceType.Pawn, asWhite).Count * 100 +
+            board.GetPieceList(PieceType.Knight, asWhite).Count * 300 +
+            board.GetPieceList(PieceType.Bishop, asWhite).Count * 300 +
+            board.GetPieceList(PieceType.Rook, asWhite).Count * 500 +
+            board.GetPieceList(PieceType.Queen, asWhite).Count * 900 +
+            board.GetPieceList(PieceType.King, asWhite).Count * 100000 +
+            // Mobility (the number of legal moves)
+            10 * board.GetLegalMoves().Length;
+
+    TEntry? getTransposition(ulong zobristKey)
     {
-        Transposition entry = transpositions[(int)(zobristKey % (ulong)transpositionTableSize)];
+        TEntry? entry = transpositions[(int)(zobristKey % 2080895)];
         if (entry != null && entry.ZobristKey == zobristKey) return entry;
         return null;
     }
 
-    void setTransposition(ulong zobristKey, int depth, int score)
+    void setTransposition(ulong zobristKey, byte depth, int value, byte flag)
     {
-        transpositions[(int)(zobristKey % (ulong)transpositionTableSize)] = new Transposition
+        transpositions[(int)(zobristKey % 2396745)] = new TEntry
         {
             ZobristKey = zobristKey,
             Depth = depth,
-            Score = score
+            Value = value,
+            Flag = flag
         };
-    }
-
-    Move[] getMovesWithCapturesFirst(Board board)
-    {
-        Move[] legalMoves = board.GetLegalMoves();
-        return legalMoves.Where(m => m.IsCapture).ToArray()
-            .Concat(legalMoves.Where(m => !m.IsCapture).ToArray()
-        ).ToArray();
     }
 }
 
-public class Transposition
+// Size 112 bits
+class TEntry
 {
-    public ulong ZobristKey { get; set; }
-    public int Depth { get; set; }
-    public int Score { get; set; }
+    public ulong ZobristKey;
+    public int Value;
+    public byte Depth;
+    /**
+     * 0 Lowerbound, 1 Upperbound, 2 Exact
+     */
+    public byte Flag;
 }

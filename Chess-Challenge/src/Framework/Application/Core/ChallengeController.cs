@@ -20,7 +20,7 @@ namespace ChessChallenge.Application
         public enum PlayerType
         {
             Human,
-            MyBot,
+            Frederox,
             EvilBot,
 
             // Old Versions of my bot
@@ -28,9 +28,11 @@ namespace ChessChallenge.Application
             AlphaBeta,
 
             // Bots from other people
-            Caden32, // https://discord.com/channels/1132289356011405342/1132353028385677382/1132547422527168583
-            Flow, // https://discord.com/channels/@me/1132439128043180112/1132666955644555265
-            Lithium, // https://discord.com/channels/1132289356011405342/1132353028385677382/1132686682529992766
+            Caden32,
+            Flow,
+            Lithium, 
+            Diamoundz,
+            Moonwalker,
 
             // Bots from github
             Ernestoyaquello
@@ -86,7 +88,7 @@ namespace ChessChallenge.Application
             botMatchStartFens = FileHelper.ReadResourceFile("Fens.txt").Split('\n').Where(fen => fen.Length > 0).ToArray();
             botTaskWaitHandle = new AutoResetEvent(false);
 
-            StartNewGame(PlayerType.Human, PlayerType.MyBot);
+            StartNewGame(PlayerType.Human, PlayerType.Frederox);
         }
 
         public void StartNewGame(PlayerType whiteType, PlayerType blackType)
@@ -223,7 +225,7 @@ namespace ChessChallenge.Application
         {
             return type switch
             {
-                PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
+                PlayerType.Frederox => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot => new ChessPlayer(new EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.MiniMax => new ChessPlayer(new MiniMax(), type, GameDurationMilliseconds),
                 PlayerType.AlphaBeta => new ChessPlayer(new AlphaBeta(), type, GameDurationMilliseconds),
@@ -231,6 +233,8 @@ namespace ChessChallenge.Application
                 PlayerType.Flow => new ChessPlayer(new Flow(), type, GameDurationMilliseconds),
                 PlayerType.Ernestoyaquello => new ChessPlayer(new Ernestoyaquello(), type, GameDurationMilliseconds),
                 PlayerType.Lithium => new ChessPlayer(new Lithium(), type, GameDurationMilliseconds),
+                PlayerType.Diamoundz => new ChessPlayer(new Diamoundz(), type, GameDurationMilliseconds),
+                PlayerType.Moonwalker => new ChessPlayer(new MoonWalker(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
         }

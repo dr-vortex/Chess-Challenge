@@ -139,8 +139,8 @@ public class Ernestoyaquello : IChessBot
                 // Change maximum depth depending on how much time we have and how many pieces there are left
                 var numberOfPiecesLeft = BitboardHelper.GetNumberOfSetBits(board.AllPiecesBitboard);
                 var maxDepth = (numberOfPiecesLeft <= 12 || timer.MillisecondsRemaining > 25000)
-                    ? 6
-                    : (timer.MillisecondsRemaining > 5000 ? 5 : 4);
+                    ? 5
+                    : (timer.MillisecondsRemaining > 5000 ? 4 : 3);
 
                 // Calculate the best move for the opponent after our move, then take the inverse as our score.
                 // If we cannot go deeper in the search tree, then we calculate the score using heuristics.
