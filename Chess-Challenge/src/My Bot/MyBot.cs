@@ -16,12 +16,14 @@ public class MyBot : IChessBot
 
     int negativeInfinity = -10000000;
     Move bestMove;
-    byte mDepth = 5;
+    byte mDepth = 6;
 
     public Move Think(Board board, Timer timer)
     {
+        if (board.PlyCount == 0 && board.IsWhiteToMove) return new Move("d2d4", board);
         positionsEvaluated = 0;
         bestMove = Move.NullMove;
+
         int score = Negamax(board, mDepth, negativeInfinity, -negativeInfinity, board.IsWhiteToMove);
         Console.WriteLine($"Depth: {mDepth}, Evaluated: {positionsEvaluated}, {bestMove}, score: {score}");
 
@@ -37,6 +39,9 @@ public class MyBot : IChessBot
 
     int Negamax(Board board, byte depth, int alpha, int beta, bool asWhite)
     {
+        if (board.IsInCheckmate()) return negativeInfinity;
+        if (board.IsDraw()) return 0;
+
         int alphaOriginal = alpha;
         TEntry? ttEntry = getTransposition(board.ZobristKey);
 
@@ -59,33 +64,24 @@ public class MyBot : IChessBot
         positionsEvaluated++;
 
         // if depth = 0 or node is a terminal node then
-        if (depth == 0 || board.IsDraw() || board.IsInCheckmate())
-        {
-            if (board.IsInCheckmate()) return negativeInfinity;
-            // return color × the heuristic value of node
-            return EvaluateHeuristicValue(board, asWhite);
-        }
+        if (depth == 0) return Quiesce(board, alpha, beta);
 
         var moves = board.GetLegalMoves()
             .OrderByDescending(move => ScoreMovePotential(move));
-
-        int value = negativeInfinity;
 
         //for (int i = 0; i < moves.Length; i++)
         foreach(Move move in moves)
         {
             board.MakeMove(move);
-            int moveScore = Math.Max(value, -Negamax(board, (byte)(depth - 1), -beta, -alpha, !asWhite));
+            int moveScore = -Negamax(board, (byte)(depth - 1), -beta, -alpha, !asWhite);
             board.UndoMove(move);
 
-            if (value < moveScore)
+            if (moveScore > alpha)
             {
-                value = moveScore;
                 if (depth == mDepth) bestMove = move;
+                if (moveScore >= beta) return beta;
+                alpha = moveScore;
             }
-
-            alpha = Math.Max(alpha, value);
-            if (alpha >= beta) break;
         }
 
         // (* Transposition Table Store; board.ZobristKey is the lookup key for ttEntry *)
@@ -94,13 +90,38 @@ public class MyBot : IChessBot
         byte flag = 2;
 
         // ttEntry.flag := UPPERBOUND
-        if (value <= alphaOriginal) flag = 1;
+        if (alpha <= alphaOriginal) flag = 1;
 
         // ttEntry.flag := UPPERBOUND
-        else if (value >= beta) flag = 0;
+        else if (alpha >= beta) flag = 0;
 
-        setTransposition(board.ZobristKey, depth, value, flag);
-        return value;
+        setTransposition(board.ZobristKey, depth, alpha, flag);
+        return alpha;
+    }
+
+    int Quiesce(Board board, int alpha, int beta)
+    {
+        positionsEvaluated++;
+        if (board.IsInCheckmate()) return negativeInfinity;
+        if (board.IsDraw()) return 0;
+
+        int standPat = EvaluateHeuristicValue(board, board.IsWhiteToMove);
+        if (standPat >= beta) return beta;
+        if (alpha < standPat) alpha = standPat;
+
+        Move[] legalCaptures = board.GetLegalMoves(true)
+            .OrderByDescending(move => ScoreMovePotential(move))
+            .ToArray();
+        foreach(Move move in legalCaptures)
+        {
+            board.MakeMove(move);
+            int score = -Quiesce(board, -beta, -alpha);
+            board.UndoMove(move);
+
+            if (score >= beta) return beta;
+            alpha = Math.Max(alpha, score);
+        }
+        return alpha;
     }
 
     int ScoreMovePotential(Move move)
