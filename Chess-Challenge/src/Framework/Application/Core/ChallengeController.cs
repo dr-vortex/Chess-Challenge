@@ -12,6 +12,7 @@ using static ChessChallenge.Application.Settings;
 using static ChessChallenge.Application.ConsoleHelper;
 using Frederox.MiniMax;
 using Frederox.AlphaBeta;
+using Frederox.Negamax;
 
 namespace ChessChallenge.Application
 {
@@ -22,13 +23,14 @@ namespace ChessChallenge.Application
             Human,
             Frederox,
             EvilBot,
+            Negamax,
 
             // Old Versions of my bot
             MiniMax,
             AlphaBeta,
 
             // Bots from other people
-            Caden32,
+            Stockfish12,
             Flow,
             Lithium, 
             Diamoundz,
@@ -211,13 +213,13 @@ namespace ChessChallenge.Application
                 boardUI.SetPerspective(PlayerWhite.IsHuman);
                 HumanWasWhiteLastGame = PlayerWhite.IsHuman;
             }
-            else if (PlayerWhite.Bot is MyBot && PlayerBlack.Bot is MyBot)
+            else if (PlayerWhite.Bot is Negamax && PlayerBlack.Bot is Negamax)
             {
                 boardUI.SetPerspective(true);
             }
             else
             {
-                boardUI.SetPerspective(PlayerWhite.Bot is MyBot);
+                boardUI.SetPerspective(PlayerWhite.Bot is Negamax);
             }
         }
 
@@ -229,7 +231,8 @@ namespace ChessChallenge.Application
                 PlayerType.EvilBot => new ChessPlayer(new EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.MiniMax => new ChessPlayer(new MiniMax(), type, GameDurationMilliseconds),
                 PlayerType.AlphaBeta => new ChessPlayer(new AlphaBeta(), type, GameDurationMilliseconds),
-                PlayerType.Caden32 => new ChessPlayer(new Caden32(), type, GameDurationMilliseconds),
+                PlayerType.Negamax => new ChessPlayer(new Negamax(), type, GameDurationMilliseconds),
+                PlayerType.Stockfish12 => new ChessPlayer(new StockfishBot(), type, GameDurationMilliseconds),
                 PlayerType.Flow => new ChessPlayer(new Flow(), type, GameDurationMilliseconds),
                 PlayerType.Ernestoyaquello => new ChessPlayer(new Ernestoyaquello(), type, GameDurationMilliseconds),
                 PlayerType.Lithium => new ChessPlayer(new Lithium(), type, GameDurationMilliseconds),

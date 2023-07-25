@@ -37,11 +37,16 @@ namespace ChessChallenge.Application
                 controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.AlphaBeta);
             }
 
+            if (NextButtonInRow("MyBot vs Negamax", ref buttonPos, spacing, buttonSize))
+            {
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Negamax);
+            }
+
             buttonPos.Y += breakSpacing;
 
-            if (NextButtonInRow("MyBot vs @Caden32", ref buttonPos, spacing, buttonSize))
+            if (NextButtonInRow("MyBot vs Stockfish 12", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Caden32);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.Frederox, ChallengeController.PlayerType.Stockfish12);
             }
 
             if (NextButtonInRow("MyBot vs @Flow", ref buttonPos, spacing, buttonSize))

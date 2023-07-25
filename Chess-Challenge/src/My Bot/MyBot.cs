@@ -1,8 +1,11 @@
 ﻿using ChessChallenge.API;
-using Frederox.AlphaBeta;
 using System;
 using System.Linq;
 
+// Things to do:
+// - PeSTO piece values
+// - PeSTO Tables
+// - Iterative deepening
 public class MyBot : IChessBot
 {
     // 256 * 1024 * 1024 = 268435456 bits
@@ -11,15 +14,23 @@ public class MyBot : IChessBot
 
     int positionsEvaluated;
 
-    int negativeInfinity = -100000;
+    int negativeInfinity = -10000000;
     Move bestMove;
     byte mDepth = 5;
 
     public Move Think(Board board, Timer timer)
     {
         positionsEvaluated = 0;
-        Negamax(board, mDepth, negativeInfinity, -negativeInfinity, board.IsWhiteToMove);
-        Console.WriteLine($"Depth: {mDepth}, Evaluated: {positionsEvaluated}, {bestMove}");
+        bestMove = Move.NullMove;
+        int score = Negamax(board, mDepth, negativeInfinity, -negativeInfinity, board.IsWhiteToMove);
+        Console.WriteLine($"Depth: {mDepth}, Evaluated: {positionsEvaluated}, {bestMove}, score: {score}");
+
+        // The bot occasionally doesnt have a move weird bug...
+        if (bestMove == Move.NullMove)
+        {
+            Console.WriteLine("NULL MOVE!");
+            return board.GetLegalMoves().OrderByDescending(move => ScoreMovePotential(move)).ToArray()[0];
+        }
 
         return bestMove;
     }
