@@ -24,22 +24,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="src\Evil Bot\MiniMax.cs">
+    <Compile Update="src\Bots\MiniMax.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="src\Evil Bot\Quiescence.cs">
+    <Compile Update="src\Bots\Quiescence.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="src\Evil Bot\Negamax.cs">
+    <Compile Update="src\Bots\Negamax.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="src\My Bot\MyBot.cs">
+    <Compile Update="src\Bots\MyBot.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
     <Compile Update="src\Framework\Application\UI\BotBrainCapacityUI.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="src\Evil Bot\EvilBot.cs">
+    <Compile Update="src\Bots\EvilBot.cs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
   </ItemGroup>

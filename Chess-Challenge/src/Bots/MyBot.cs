@@ -73,7 +73,7 @@ public class MyBot : IChessBot
             .OrderByDescending(move => ScoreMovePotential(move));
 
         //for (int i = 0; i < moves.Length; i++)
-        foreach(Move move in moves)
+        foreach (Move move in moves)
         {
             board.MakeMove(move);
             int moveScore = -Negamax(board, (byte)(depth - 1), -beta, -alpha, !asWhite);
@@ -116,7 +116,7 @@ public class MyBot : IChessBot
             .OrderByDescending(move => ScoreMovePotential(move))
             .ToArray();
 
-        foreach(Move move in legalCaptures)
+        foreach (Move move in legalCaptures)
         {
             board.MakeMove(move);
             int score = -Quiesce(board, -beta, -alpha);
@@ -137,7 +137,7 @@ public class MyBot : IChessBot
             scoreGuess += 10 * GetPieceValue(move.CapturePieceType) - GetPieceValue(move.MovePieceType);
 
         // Promoting a pawn
-        if (move.IsPromotion) 
+        if (move.IsPromotion)
             scoreGuess += GetPieceValue(move.PromotionPieceType);
 
         return scoreGuess;
@@ -149,7 +149,7 @@ public class MyBot : IChessBot
         return values[(int)type];
     }
 
-    int EvaluateHeuristicValue(Board board, bool asWhite) 
+    int EvaluateHeuristicValue(Board board, bool asWhite)
         => EvaluateSide(board, asWhite) - EvaluateSide(board, !asWhite);
 
     int EvaluateSide(Board board, bool asWhite)
