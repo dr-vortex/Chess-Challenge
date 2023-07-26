@@ -2,16 +2,25 @@
 using ChessChallenge.API;
 using Stockfish.NET;
 
+public static class StockfishSettings
+{
+	public static int stockfishLevel = 3;
+    static int[] eloLookup = { 1347, 1490, 1597, 1694, 1785, 1871, 1954, 2035, 2113, 2189, 2264, 2337, 2409, 2480, 2550, 2619, 2686, 2754, 2820, 2886 };
+
+	public static int getElo()
+	{
+		return eloLookup[stockfishLevel];
+	}
+}
+
 public class StockfishBot : IChessBot
 {
-	const int STOCKFISH_LEVEL = 2;
-
 	IStockfish mStockFish;
 
 	public StockfishBot()
 	{
 		Stockfish.NET.Models.Settings stockfishSettings = new Stockfish.NET.Models.Settings();
-		stockfishSettings.SkillLevel = STOCKFISH_LEVEL;
+		stockfishSettings.SkillLevel = StockfishSettings.stockfishLevel;
 
 		mStockFish = new Stockfish.NET.Stockfish("C:\\Users\\blake\\Desktop\\Chess-Challenge\\Chess-Challenge\\resources\\stockfish\\stockfish12.exe", 2, stockfishSettings);
 	}

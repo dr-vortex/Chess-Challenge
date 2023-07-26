@@ -12,11 +12,14 @@ public class MyBot : IChessBot
     // 268435456 / 112 (Sizeof TEntry) = 2396745
     TEntry[] transpositions = new TEntry[2396745];
 
+    // Using an array is probably better than dict
+    // index can be created 
+
     int positionsEvaluated;
 
     int negativeInfinity = -10000000;
     Move bestMove;
-    byte mDepth = 6;
+    byte mDepth = 5;
 
     public Move Think(Board board, Timer timer)
     {
@@ -112,6 +115,7 @@ public class MyBot : IChessBot
         Move[] legalCaptures = board.GetLegalMoves(true)
             .OrderByDescending(move => ScoreMovePotential(move))
             .ToArray();
+
         foreach(Move move in legalCaptures)
         {
             board.MakeMove(move);
@@ -160,7 +164,10 @@ public class MyBot : IChessBot
 
     TEntry? getTransposition(ulong zobristKey)
     {
+        ///                                                 num of items in the transpositoon table. idk yeah
         TEntry? entry = transpositions[(int)(zobristKey % 2080895)];
+
+        // only risk is occasional data collisions which is why checking key
         if (entry != null && entry.ZobristKey == zobristKey) return entry;
         return null;
     }

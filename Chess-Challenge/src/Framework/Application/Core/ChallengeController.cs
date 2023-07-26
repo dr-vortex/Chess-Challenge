@@ -13,6 +13,7 @@ using static ChessChallenge.Application.ConsoleHelper;
 using Frederox.MiniMax;
 using Frederox.AlphaBeta;
 using Frederox.Negamax;
+using Frederox.Quiescence;
 
 namespace ChessChallenge.Application
 {
@@ -21,23 +22,19 @@ namespace ChessChallenge.Application
         public enum PlayerType
         {
             Human,
-            Frederox,
+            MyBot,
             EvilBot,
-            Negamax,
 
-            // Old Versions of my bot
+            // Old bot iterations
+            Negamax,
+            Quiescence,
             MiniMax,
             AlphaBeta,
 
             // Bots from other people
             Stockfish12,
-            Flow,
-            Lithium, 
-            Diamoundz,
-            Moonwalker,
-
-            // Bots from github
-            Ernestoyaquello
+            Ernestoyaquello,
+            Outer
         }
 
         // Game state
@@ -90,7 +87,7 @@ namespace ChessChallenge.Application
             botMatchStartFens = FileHelper.ReadResourceFile("Fens.txt").Split('\n').Where(fen => fen.Length > 0).ToArray();
             botTaskWaitHandle = new AutoResetEvent(false);
 
-            StartNewGame(PlayerType.Human, PlayerType.Frederox);
+            StartNewGame(PlayerType.Human, PlayerType.MyBot);
         }
 
         public void StartNewGame(PlayerType whiteType, PlayerType blackType)
@@ -225,17 +222,15 @@ namespace ChessChallenge.Application
         {
             return type switch
             {
-                PlayerType.Frederox => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
+                PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
                 PlayerType.EvilBot => new ChessPlayer(new EvilBot(), type, GameDurationMilliseconds),
                 PlayerType.MiniMax => new ChessPlayer(new MiniMax(), type, GameDurationMilliseconds),
                 PlayerType.AlphaBeta => new ChessPlayer(new AlphaBeta(), type, GameDurationMilliseconds),
                 PlayerType.Negamax => new ChessPlayer(new Negamax(), type, GameDurationMilliseconds),
+                PlayerType.Quiescence => new ChessPlayer(new Quiescence(), type, GameDurationMilliseconds),
                 PlayerType.Stockfish12 => new ChessPlayer(new StockfishBot(), type, GameDurationMilliseconds),
-                PlayerType.Flow => new ChessPlayer(new Flow(), type, GameDurationMilliseconds),
                 PlayerType.Ernestoyaquello => new ChessPlayer(new Ernestoyaquello(), type, GameDurationMilliseconds),
-                PlayerType.Lithium => new ChessPlayer(new Lithium(), type, GameDurationMilliseconds),
-                PlayerType.Diamoundz => new ChessPlayer(new Diamoundz(), type, GameDurationMilliseconds),
-                PlayerType.Moonwalker => new ChessPlayer(new MoonWalker(), type, GameDurationMilliseconds),
+                PlayerType.Outer => new ChessPlayer(new ARCNET(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
         }

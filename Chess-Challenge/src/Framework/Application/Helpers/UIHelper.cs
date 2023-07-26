@@ -76,7 +76,7 @@ namespace ChessChallenge.Application
             }
         }
 
-        public static bool Button(string text, Vector2 centre, Vector2 size)
+        public static bool Button(string text, Vector2 centre, Vector2 size, string subText = "")
         {
             Rectangle rec = new(centre.X - size.X / 2, centre.Y - size.Y / 2, size.X, size.Y);
 
@@ -91,9 +91,21 @@ namespace ChessChallenge.Application
 
             Raylib.DrawRectangleRec(rec, col);
             Color textCol = mouseOver ? Color.WHITE : new Color(180, 180, 180, 255);
+            Color subTextCol = !mouseOver ? Color.GRAY : new Color(180, 180, 180, 255);
             int fontSize = ScaleInt(32);
+            int subTextSize = ScaleInt(30);
 
-            DrawText(text, centre, fontSize, 1, textCol, AlignH.Centre);
+            if (subText == "")
+            {
+                DrawText(text, centre, fontSize, 1, textCol, AlignH.Centre);
+            }
+            else
+            {
+                Vector2 alignedUp = new(centre.X, centre.Y - 8);
+                Vector2 alignedDown = new(centre.X, centre.Y + 8);
+                DrawText(text, alignedUp, fontSize, 1, textCol, AlignH.Centre);
+                DrawText(subText, alignedDown, subTextSize, 1, subTextCol, AlignH.Centre);
+            }
 
             return pressedThisFrame;
         }
